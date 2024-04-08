@@ -1,92 +1,64 @@
-const listOfUsersNode = document.querySelector("#user-list");
-const githubFormNode = document.querySelector("#github-form");
-const searchInputNode = document.querySelector("#search");
-const listOfUsersReposNode = document.querySelector("#repos-list");
+document.addEventListener('DOMContentLoaded', () => {
+    const formElement = document.getElementById('github-form');
+    const userListElement = document.getElementById('user-list');
+    const reposListElement = document.getElementById('repos-list');
 
-const gitHubToken = "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";
+    // Event listener for form submission
+    formElement.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('search').value;
+        if (!username) return;
 
-function searchAllUsersByString(searchString) {
-  fetch(`https://api.github.com/search/users?q=${searchString}`, {
-    headers: {
-      "Content-type": "application/json",
-      Authorization: `Bearer ${gitHubToken}`,
-      Accept: "application/vnd.github.v3+json",
-    },
-  })
-    .then((resp) => resp.json())
-    .then((data) => renderUsers(data.items));
-}
+        try {
+            const userData = await fetchUserData(username);
+            displayUserInfo(userData);
+            const reposData = await fetchAllUserRepositories(username);
+            displayReposCount(reposData.length); // Displaying the count of repositories
+        } catch (error) {
+            console.error('Error fetching GitHub user data:', error);
+        }
+    });
 
-function fetchReposByUserName(userName) {
-  fetch(`https://api.github.com/users/${userName}/repos`, {
-    headers: {
-      "Content-type": "application/json",
-      Authorization: `Bearer ${gitHubToken}`,
-      Accept: "application/vnd.github.v3+json",
-    },
-  })
-    .then((resp) => resp.json())
-    .then((data) => renderUserRepos(data));
-}
+    // Fetch user data from GitHub API
+    async function fetchUserData(username) {
+        const url = `https://api.github.com/users/${username}`;
+        const response = await fetch(url);
+        return response.json();
+    }
 
-function buildGithubUserList(event) {
-  event.preventDefault();
-  let userName = searchInputNode.value;
-  searchAllUsersByString(userName);
-}
+    // Fetch all repositories for the user (handling pagination)
+    async function fetchAllUserRepositories(username) {
+        let allRepositories = [];
+        let page = 1;
+        let repositories = [];
+        do {
+            repositories = await fetchUserRepositories(username, page);
+            allRepositories = allRepositories.concat(repositories);
+            page++;
+        } while (repositories.length > 0);
+        return allRepositories;
+    }
 
-function renderUsers(users) {
-  for (const li of listOfUsersNode.children) {
-    li.remove();
-  }
+    // Fetch repositories from a specific page
+    async function fetchUserRepositories(username, page) {
+        const url = `https://api.github.com/users/${username}/repos?page=${page}&per_page=100`;
+        const response = await fetch(url);
+        return response.json();
+    }
 
-  users.forEach((user) => {
-    const li = document.createElement("li");
-    const div = document.createElement("div");
-    const img = document.createElement("img");
-    const a = document.createElement("a");
-    const h1 = document.createElement("h1");
+    // Display user information
+    function displayUserInfo(userData) {
+        userListElement.innerHTML = '';
+        const userInfoItem = document.createElement('li');
+        userInfoItem.textContent = `Name: ${userData.name}, Bio: ${userData.bio}, Followers: ${userData.followers}, Following: ${userData.following}`;
+        userListElement.appendChild(userInfoItem);
+    }
 
-    h1.textContent = user.login;
-    h1.addEventListener("click", handleUserRepositories);
-    img.src = user.avatar_url;
-    a.href = user.html_url;
-    a.textContent = `${user.login} Profile`;
-
-    div.appendChild(h1);
-    div.appendChild(img);
-    div.appendChild(a);
-
-    li.appendChild(div);
-    listOfUsersNode.appendChild(li);
-  });
-}
-
-function handleUserRepositories(e) {
-  const userName = e.target.textContent;
-  fetchReposByUserName(userName);
-}
-
-function renderUserRepos(repos) {
-  for (const li of listOfUsersReposNode.children) {
-    li.remove();
-  }
-
-  repos.forEach((repo) => {
-    const li = document.createElement("li");
-    const div = document.createElement("div");
-    const a = document.createElement("a");
-    const h1 = document.createElement("h1");
-
-    h1.textContent = repo.name;
-    a.href = repo.html_url;
-    a.textContent = repo.name;
-
-    div.appendChild(h1);
-    div.appendChild(a);
-    li.appendChild(div);
-    listOfUsersReposNode.appendChild(li);
-  });
-}
-
-githubFormNode.addEventListener("submit", buildGithubUserList);
+    // Display the count of repositories
+    function displayReposCount(count) {
+        reposListElement.innerHTML = '';
+        const reposCountItem = document.createElement('li');
+        reposCountItem.textContent = `Number of Repositories: ${count}`;
+        reposListElement.appendChild(reposCountItem);
+    }
+});
