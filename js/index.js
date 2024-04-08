@@ -12,8 +12,8 @@ function searchUsersByName(searchQuery) {
       Authorization: `token ${gitHubToken}`,
     },
   })
-    .then((response) => response.json())
-    .then((data) => renderUserList(data.items));
+    .then(response => response.json())
+    .then(data => renderUserList(data.items));
 }
 
 // Function to fetch repositories for a specific user
@@ -23,8 +23,8 @@ function fetchUserRepositories(username) {
       Authorization: `token ${gitHubToken}`,
     },
   })
-    .then((response) => response.json())
-    .then((data) => renderUserRepositoriesList(data));
+    .then(response => response.json())
+    .then(data => renderUserRepositories(data));
 }
 
 // Function to handle form submission
@@ -39,7 +39,7 @@ function handleFormSubmission(event) {
 // Function to render user search results
 function renderUserList(users) {
   userListElement.innerHTML = ""; // Clear existing list
-  users.forEach((user) => {
+  users.forEach(user => {
     const listItem = document.createElement("li");
     const userInfoContainer = document.createElement("div");
     const userAvatar = document.createElement("img");
@@ -62,9 +62,9 @@ function renderUserList(users) {
 }
 
 // Function to render user repositories
-function renderUserRepositoriesList(repositories) {
+function renderUserRepositories(repositories) {
   reposListElement.innerHTML = ""; // Clear existing list
-  repositories.forEach((repo) => {
+  repositories.forEach(repo => {
     const listItem = document.createElement("li");
     const repoLink = document.createElement("a");
 
@@ -78,4 +78,3 @@ function renderUserRepositoriesList(repositories) {
 
 // Event listener for form submission
 githubFormElement.addEventListener("submit", handleFormSubmission);
-
