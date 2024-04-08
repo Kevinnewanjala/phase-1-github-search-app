@@ -1,80 +1,92 @@
-const userListElement = document.querySelector("#user-list");
-const githubFormElement = document.querySelector("#github-form");
-const searchInputElement = document.querySelector("#search");
-const reposListElement = document.querySelector("#repos-list");
+const listOfUsersNode = document.querySelector("#user-list");
+const githubFormNode = document.querySelector("#github-form");
+const searchInputNode = document.querySelector("#search");
+const listOfUsersReposNode = document.querySelector("#repos-list");
 
 const gitHubToken = "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";
 
-// Function to search GitHub for users by name
-function searchUsersByName(searchQuery) {
-  fetch(`https://api.github.com/search/users?q=${searchQuery}`, {
+function searchAllUsersByString(searchString) {
+  fetch(`https://api.github.com/search/users?q=${searchString}`, {
     headers: {
-      Authorization: `token ${gitHubToken}`,
+      "Content-type": "application/json",
+      Authorization: `Bearer ${gitHubToken}`,
+      Accept: "application/vnd.github.v3+json",
     },
   })
-    .then(response => response.json())
-    .then(data => renderUserList(data.items));
+    .then((resp) => resp.json())
+    .then((data) => renderUsers(data.items));
 }
 
-// Function to fetch repositories for a specific user
-function fetchUserRepositories(username) {
-  fetch(`https://api.github.com/users/${username}/repos`, {
+function fetchReposByUserName(userName) {
+  fetch(`https://api.github.com/users/${userName}/repos`, {
     headers: {
-      Authorization: `token ${gitHubToken}`,
+      "Content-type": "application/json",
+      Authorization: `Bearer ${gitHubToken}`,
+      Accept: "application/vnd.github.v3+json",
     },
   })
-    .then(response => response.json())
-    .then(data => renderUserRepositories(data));
+    .then((resp) => resp.json())
+    .then((data) => renderUserRepos(data));
 }
 
-// Function to handle form submission
-function handleFormSubmission(event) {
+function buildGithubUserList(event) {
   event.preventDefault();
-  const searchQuery = searchInputElement.value.trim();
-  if (searchQuery !== '') {
-    searchUsersByName(searchQuery);
+  let userName = searchInputNode.value;
+  searchAllUsersByString(userName);
+}
+
+function renderUsers(users) {
+  for (const li of listOfUsersNode.children) {
+    li.remove();
   }
-}
 
-// Function to render user search results
-function renderUserList(users) {
-  userListElement.innerHTML = ""; // Clear existing list
-  users.forEach(user => {
-    const listItem = document.createElement("li");
-    const userInfoContainer = document.createElement("div");
-    const userAvatar = document.createElement("img");
-    const userLink = document.createElement("a");
+  users.forEach((user) => {
+    const li = document.createElement("li");
+    const div = document.createElement("div");
+    const img = document.createElement("img");
+    const a = document.createElement("a");
+    const h1 = document.createElement("h1");
 
-    userAvatar.src = user.avatar_url;
-    userAvatar.alt = `${user.login} avatar`;
+    h1.textContent = user.login;
+    h1.addEventListener("click", handleUserRepositories);
+    img.src = user.avatar_url;
+    a.href = user.html_url;
+    a.textContent = `${user.login} Profile`;
 
-    userLink.href = user.html_url;
-    userLink.textContent = user.login;
+    div.appendChild(h1);
+    div.appendChild(img);
+    div.appendChild(a);
 
-    // Event listener to fetch repositories on user click
-    userLink.addEventListener("click", () => fetchUserRepositories(user.login));
-
-    userInfoContainer.appendChild(userAvatar);
-    userInfoContainer.appendChild(userLink);
-    listItem.appendChild(userInfoContainer);
-    userListElement.appendChild(listItem);
+    li.appendChild(div);
+    listOfUsersNode.appendChild(li);
   });
 }
 
-// Function to render user repositories
-function renderUserRepositories(repositories) {
-  reposListElement.innerHTML = ""; // Clear existing list
-  repositories.forEach(repo => {
-    const listItem = document.createElement("li");
-    const repoLink = document.createElement("a");
+function handleUserRepositories(e) {
+  const userName = e.target.textContent;
+  fetchReposByUserName(userName);
+}
 
-    repoLink.href = repo.html_url;
-    repoLink.textContent = repo.name;
+function renderUserRepos(repos) {
+  for (const li of listOfUsersReposNode.children) {
+    li.remove();
+  }
 
-    listItem.appendChild(repoLink);
-    reposListElement.appendChild(listItem);
+  repos.forEach((repo) => {
+    const li = document.createElement("li");
+    const div = document.createElement("div");
+    const a = document.createElement("a");
+    const h1 = document.createElement("h1");
+
+    h1.textContent = repo.name;
+    a.href = repo.html_url;
+    a.textContent = repo.name;
+
+    div.appendChild(h1);
+    div.appendChild(a);
+    li.appendChild(div);
+    listOfUsersReposNode.appendChild(li);
   });
 }
 
-// Event listener for form submission
-githubFormElement.addEventListener("submit", handleFormSubmission);
+githubFormNode.addEventListener("submit", buildGithubUserList);
